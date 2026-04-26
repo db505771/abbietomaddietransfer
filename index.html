@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+  margin:0;
+  background:#000000;
+  font-family:Arial;
+  color:white;
+  padding:20px;
+}
+
+.card {
+  background:#2b2b2b;
+  padding:14px;
+  margin-bottom:10px;
+  border-radius:14px;
+  cursor:pointer;
+}
+
+.popup {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+  transition:0.25s;
+}
+
+.popup.show {
+  background:rgba(0,0,0,0.75);
+  pointer-events:auto;
+}
+
+.box {
+  background:#111;
+  padding:20px;
+  border-radius:16px;
+  width:300px;
+  text-align:center;
+  transform:translateY(30px);
+  opacity:0;
+  transition:0.25s;
+}
+
+.popup.show .box {
+  transform:translateY(0);
+  opacity:1;
+}
+
+button {
+  background:white;
+  border:none;
+  padding:10px 16px;
+  border-radius:999px;
+  margin:5px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.loading {
+  opacity:0.6;
+  pointer-events:none;
+}
+
+.xp {
+  position:fixed;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,0);
+  color:#00ff88;
+  font-weight:bold;
+  opacity:0;
+}
+
+.xp.show {
+  animation:floatUp 1s ease forwards;
+}
+
+@keyframes floatUp {
+  0% {opacity:0; transform:translate(-50%,0);}
+  20% {opacity:1;}
+  100% {opacity:0; transform:translate(-50%,-80px);}
+}
+</style>
+</head>
+
+<body>
+
+<h2></h2>
+<div id="list"></div>
+
+<div class="popup" id="popup">
+  <div class="box">
+    <p id="text"></p>
+    <button id="yesBtn" onclick="confirm()">Yes</button>
+    <button onclick="closePopup()">No</button>
+  </div>
+</div>
+
+<div class="xp" id="xp"></div>
+
+<script>
+
+const API = "https://script.google.com/macros/s/AKfycbzfKMfjdNfQn2_cpUFfE9C_8xlyZPD78O41Xu8k3YpjTL163EF3P6PDW_jKwuXc-C4s/exec";
+
+let selected = {};
+
+/* LOAD ABBIE */
+async function load() {
+  const res = await fetch(API + "?action=abbie");
+  const data = await res.json();
+
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  data.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <div>${item.date}</div>
+      <div>${item.session} min</div>
+    `;
+
+    div.onclick = () => openPopup(item);
+
+    list.appendChild(div);
+  });
+}
+
+/* POPUP */
+function openPopup(item) {
+  selected = item;
+
+  document.getElementById("text").innerText =
+    `Transfer ${item.session} minutes to Maddie?`;
+
+  document.getElementById("popup").classList.add("show");
+}
+
+function closePopup() {
+  document.getElementById("popup").classList.remove("show");
+}
+
+/* XP */
+function showXP(val) {
+  const xp = document.getElementById("xp");
+  xp.innerText = `+${val} MINUTES ADDED TO MADDIE`;
+  xp.classList.remove("show");
+  void xp.offsetWidth;
+  xp.classList.add("show");
+}
+
+/* TRANSFER */
+async function confirm() {
+  const btn = document.getElementById("yesBtn");
+
+  btn.innerText = "Transferring...";
+  btn.classList.add("loading");
+
+  await fetch(`${API}?action=transfer&row=${selected.row}&session=${selected.session}`);
+
+  showXP(selected.session);
+
+  closePopup();
+  load();
+
+  btn.innerText = "Yes";
+  btn.classList.remove("loading");
+}
+
+load();
+
+</script>
+
+</body>
+</html>
