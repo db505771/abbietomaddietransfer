@@ -89,7 +89,7 @@ button {
 
 <body>
 
-<h2></h2>
+<h2>Diverted Game Tracking Dashboard</h2>
 <div id="list"></div>
 
 <div class="popup" id="popup">
@@ -104,11 +104,12 @@ button {
 
 <script>
 
+// Replace with your real deployed Web App executable URL string
 const API = "https://script.google.com/macros/s/AKfycbzfKMfjdNfQn2_cpUFfE9C_8xlyZPD78O41Xu8k3YpjTL163EF3P6PDW_jKwuXc-C4s/exec";
 
 let selected = {};
 
-/* LOAD ABBIE */
+/* LOAD ABBIE GAMES */
 async function load() {
   const res = await fetch(API + "?action=abbie");
   const data = await res.json();
@@ -120,13 +121,10 @@ async function load() {
     const div = document.createElement("div");
     div.className = "card";
 
-    // Fallback text if the game name isn't saved in the log row
-    const gameLabel = item.gameName ? item.gameName : "Roblox Session";
-
     div.innerHTML = `
-      <div style="font-weight:bold; margin-bottom:4px;">${gameLabel}</div>
-      <div style="font-size:0.9em; opacity:0.8;">Played For: ${item.session} min</div>
-      <div style="font-size:0.8em; opacity:0.5; margin-top:4px;">${item.date}</div>
+      <div style="font-size: 12px; color: #aaa;">${item.date}</div>
+      <div style="font-weight: bold; font-size: 16px; margin: 4px 0;">${item.game}</div>
+      <div style="color: #00ff88;">${item.session} min</div>
     `;
 
     div.onclick = () => openPopup(item);
@@ -140,7 +138,7 @@ function openPopup(item) {
   selected = item;
 
   document.getElementById("text").innerText =
-    `Transfer ${item.session} minutes to Maddie?`;
+    `Transfer "${item.game}" (${item.session} mins) to Maddie?`;
 
   document.getElementById("popup").classList.add("show");
 }
@@ -149,16 +147,16 @@ function closePopup() {
   document.getElementById("popup").classList.remove("show");
 }
 
-/* XP */
-function showXP(val) {
+/* XP FLOATER ALERT */
+function showXP(val, game) {
   const xp = document.getElementById("xp");
-  xp.innerText = `+${val} MINUTES ADDED TO MADDIE`;
+  xp.innerText = `+${val} MINS FOR "${game.toUpperCase()}" ADDED TO MADDIE & MAIN TOTAL`;
   xp.classList.remove("show");
   void xp.offsetWidth;
   xp.classList.add("show");
 }
 
-/* TRANSFER */
+/* CONFIRM TRANSFER */
 async function confirm() {
   const btn = document.getElementById("yesBtn");
 
@@ -167,7 +165,7 @@ async function confirm() {
 
   await fetch(`${API}?action=transfer&row=${selected.row}&session=${selected.session}`);
 
-  showXP(selected.session);
+  showXP(selected.session, selected.game);
 
   closePopup();
   load();
