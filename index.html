@@ -3,93 +3,104 @@
 <head>
 <style>
 body {
-  margin:0;
-  background:#000000;
-  font-family:Arial;
-  color:white;
-  padding:20px;
+  margin: 0;
+  background: #000000;
+  font-family: Arial, sans-serif;
+  color: white;
+  padding: 10px; /* Kept a tiny gap so it doesn't touch the absolute edge */
+}
+
+#list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .card {
-  background:#2b2b2b;
-  padding:14px;
-  margin-bottom:10px;
-  border-radius:14px;
-  cursor:pointer;
+  background: #2b2b2b;
+  padding: 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.card:hover {
+  transform: scale(1.01);
 }
 
 .popup {
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  pointer-events:none;
-  transition:0.25s;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: 0.25s;
 }
 
 .popup.show {
-  background:rgba(0,0,0,0.75);
-  pointer-events:auto;
+  background: rgba(0,0,0,0.75);
+  pointer-events: auto;
 }
 
 .box {
-  background:#111;
-  padding:20px;
-  border-radius:16px;
-  width:300px;
-  text-align:center;
-  transform:translateY(30px);
-  opacity:0;
-  transition:0.25s;
+  background: #111;
+  padding: 20px;
+  border-radius: 16px;
+  width: 300px;
+  text-align: center;
+  transform: translateY(30px);
+  opacity: 0;
+  transition: 0.25s;
 }
 
 .popup.show .box {
-  transform:translateY(0);
-  opacity:1;
+  transform: translateY(0);
+  opacity: 1;
 }
 
 button {
-  background:white;
-  border:none;
-  padding:10px 16px;
-  border-radius:999px;
-  margin:5px;
-  font-weight:bold;
-  cursor:pointer;
+  background: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 999px;
+  margin: 5px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 .loading {
-  opacity:0.6;
-  pointer-events:none;
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .xp {
-  position:fixed;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,0);
-  color:#00ff88;
-  font-weight:bold;
-  opacity:0;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, 0);
+  color: #00ff88;
+  font-weight: bold;
+  opacity: 0;
+  text-align: center;
+  z-index: 10;
 }
 
 .xp.show {
-  animation:floatUp 1s ease forwards;
+  animation: floatUp 1s ease forwards;
 }
 
 @keyframes floatUp {
-  0% {opacity:0; transform:translate(-50%,0);}
-  20% {opacity:1;}
-  100% {opacity:0; transform:translate(-50%,-80px);}
+  0% { opacity: 0; transform: translate(-50%, 0); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -80px); }
 }
 </style>
 </head>
 
 <body>
 
-<h2>Diverted Game Tracking Dashboard</h2>
 <div id="list"></div>
 
 <div class="popup" id="popup">
@@ -103,43 +114,47 @@ button {
 <div class="xp" id="xp"></div>
 
 <script>
-
-// Replace with your real deployed Web App executable URL string
+// Replace this with your newly deployed Google Web App Exec URL
 const API = "https://script.google.com/macros/s/AKfycbzfKMfjdNfQn2_cpUFfE9C_8xlyZPD78O41Xu8k3YpjTL163EF3P6PDW_jKwuXc-C4s/exec";
 
 let selected = {};
 
 /* LOAD ABBIE GAMES */
 async function load() {
-  const res = await fetch(API + "?action=abbie");
-  const data = await res.json();
+  try {
+    const res = await fetch(API + "?action=abbie");
+    const data = await res.json();
 
-  const list = document.getElementById("list");
-  list.innerHTML = "";
+    const list = document.getElementById("list");
+    list.innerHTML = "";
 
-  data.forEach(item => {
-    const div = document.createElement("div");
-    div.className = "card";
+    if (data.length === 0) {
+      list.innerHTML = `<div style="color: #666; text-align: center; margin-top: 20px;">No pending game records found.</div>`;
+      return;
+    }
 
-    div.innerHTML = `
-      <div style="font-size: 12px; color: #aaa;">${item.date}</div>
-      <div style="font-weight: bold; font-size: 16px; margin: 4px 0;">${item.game}</div>
-      <div style="color: #00ff88;">${item.session} min</div>
-    `;
+    data.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "card";
 
-    div.onclick = () => openPopup(item);
+      div.innerHTML = `
+        <div style="font-size: 12px; color: #aaa;">${item.date}</div>
+        <div style="font-weight: bold; font-size: 16px; margin: 4px 0;">${item.game}</div>
+        <div style="color: #00ff88;">${item.session} min</div>
+      `;
 
-    list.appendChild(div);
-  });
+      div.onclick = () => openPopup(item);
+      list.appendChild(div);
+    });
+  } catch (err) {
+    document.getElementById("list").innerHTML = `<div style="color: #ff4444; text-align: center; margin-top: 20px;">Error fetching data. Check Web App configuration.</div>`;
+  }
 }
 
-/* POPUP */
+/* POPUP MANAGEMENT */
 function openPopup(item) {
   selected = item;
-
-  document.getElementById("text").innerText =
-    `Transfer "${item.game}" (${item.session} mins) to Maddie?`;
-
+  document.getElementById("text").innerText = `Transfer "${item.game}" (${item.session} mins) to Maddie?`;
   document.getElementById("popup").classList.add("show");
 }
 
@@ -147,25 +162,28 @@ function closePopup() {
   document.getElementById("popup").classList.remove("show");
 }
 
-/* XP FLOATER ALERT */
+/* SUCCESS XP POPUP */
 function showXP(val, game) {
   const xp = document.getElementById("xp");
   xp.innerText = `+${val} MINS FOR "${game.toUpperCase()}" ADDED TO MADDIE & MAIN TOTAL`;
   xp.classList.remove("show");
-  void xp.offsetWidth;
+  void xp.offsetWidth; // Force CSS reflow animation trigger
   xp.classList.add("show");
 }
 
-/* CONFIRM TRANSFER */
+/* TRANSACTION RESOLVER */
 async function confirm() {
   const btn = document.getElementById("yesBtn");
 
   btn.innerText = "Transferring...";
   btn.classList.add("loading");
 
-  await fetch(`${API}?action=transfer&row=${selected.row}&session=${selected.session}`);
-
-  showXP(selected.session, selected.game);
+  try {
+    await fetch(`${API}?action=transfer&row=${selected.row}&session=${selected.session}`);
+    showXP(selected.session, selected.game);
+  } catch (e) {
+    alert("Transfer failed to process.");
+  }
 
   closePopup();
   load();
@@ -174,8 +192,8 @@ async function confirm() {
   btn.classList.remove("loading");
 }
 
+// Kickstart execution
 load();
-
 </script>
 
 </body>
